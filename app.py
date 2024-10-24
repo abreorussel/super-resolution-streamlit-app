@@ -44,10 +44,11 @@ if uploaded_file is not None:
     # Preprocess the image (resize and normalize as needed)
     preprocess = transforms.Compose([
         # transforms.Resize((256, 256)),
+        transforms.Lambda(lambda img: img.convert('RGB') if img.mode == 'RGBA' else img),
         transforms.ToTensor()
     ])
 
-    image_tensor = preprocess(image)  # Add batch dimension
+    image_tensor = preprocess(image).unsqueeze(0)  # Add batch dimension
     # input_img = load_image(uploaded_file)
     image_tensor = image_tensor.to(device)
 
