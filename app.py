@@ -18,7 +18,7 @@ def load_image(image_path):
     return img
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-file_path = "/content/test_base_benchmark_x2.yml"
+file_path = "/content/test_base_benchmark_x4.yml"
 
 
 opt = parse_options(file_path, is_train=False)
