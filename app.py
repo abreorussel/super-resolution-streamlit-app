@@ -10,10 +10,10 @@ import numpy as np
 # from basicsr.utils import ordered_yaml
 
 def load_image(image_path):
-    """ Load an image from the path and convert it to a tensor """
+    """ Load an image from the uploaded file and convert it to a tensor """
     file_bytes = np.asarray(bytearray(image_path.read()), dtype=np.uint8)
-    img = cv2.imread(file_bytes, cv2.IMREAD_COLOR)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)  # Read image from memory buffer
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
     img = torch.from_numpy(img).float().permute(2, 0, 1).unsqueeze(0) / 255.0  # (1, C, H, W) in [0, 1]
     return img
 
