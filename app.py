@@ -42,14 +42,14 @@ if uploaded_file is not None:
     st.image(image, caption='Uploaded Image', use_column_width=True)
 
     # Preprocess the image (resize and normalize as needed)
-    # preprocess = transforms.Compose([
-    #     transforms.Resize((256, 256)),
-    #     transforms.ToTensor(),
-    # ])
+    preprocess = transforms.Compose([
+        # transforms.Resize((256, 256)),
+        transforms.ToTensor()
+    ])
 
-    # image_tensor = preprocess(image).unsqueeze(0)  # Add batch dimension
-    input_img = load_image(uploaded_file)
-    image_tensor = input_img.to(device)
+    image_tensor = preprocess(image)  # Add batch dimension
+    # input_img = load_image(uploaded_file)
+    image_tensor = image_tensor.to(device)
 
     # Perform super resolution using the model
     # model.net_g.eval()
