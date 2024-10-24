@@ -5,14 +5,15 @@ import torchvision.transforms as transforms
 import yaml
 from basicsr.utils.options import  parse_options
 from basicsr.models import build_model
+import cv2
 # from basicsr.utils import ordered_yaml
 
-# def load_image(image_path):
-#     """ Load an image from the path and convert it to a tensor """
-#     img = cv2.imread(image_path, cv2.IMREAD_COLOR)
-#     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-#     img = torch.from_numpy(img).float().permute(2, 0, 1).unsqueeze(0) / 255.0  # (1, C, H, W) in [0, 1]
-#     return img
+def load_image(image_path):
+    """ Load an image from the path and convert it to a tensor """
+    img = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = torch.from_numpy(img).float().permute(2, 0, 1).unsqueeze(0) / 255.0  # (1, C, H, W) in [0, 1]
+    return img
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 file_path = "/content/drive/MyDrive/test_base_benchmark_x2.yml"
@@ -39,13 +40,14 @@ if uploaded_file is not None:
     st.image(image, caption='Uploaded Image', use_column_width=True)
 
     # Preprocess the image (resize and normalize as needed)
-    preprocess = transforms.Compose([
-        transforms.Resize((256, 256)),
-        transforms.ToTensor(),
-    ])
+    # preprocess = transforms.Compose([
+    #     transforms.Resize((256, 256)),
+    #     transforms.ToTensor(),
+    # ])
 
-    image_tensor = preprocess(image).unsqueeze(0)  # Add batch dimension
-    image_tensor = image_tensor.to(device)
+    # image_tensor = preprocess(image).unsqueeze(0)  # Add batch dimension
+    input_img = load_image(uploaded_file)
+    image_tensor = input_img.to(device)
 
     # Perform super resolution using the model
     # model.net_g.eval()
