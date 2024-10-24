@@ -7,7 +7,12 @@ from basicsr.utils.options import  parse_options
 from basicsr.models import build_model
 # from basicsr.utils import ordered_yaml
 
+
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 file_path = "/content/drive/MyDrive/test_base_benchmark_x2.yml"
+
+
 opt = parse_options(file_path, is_train=False)
 
 
@@ -35,6 +40,7 @@ if uploaded_file is not None:
     ])
 
     image_tensor = preprocess(image).unsqueeze(0)  # Add batch dimension
+    image_tensor = image_tensor.to(device)
 
     # Perform super resolution using the model
     model.net_g.eval()
