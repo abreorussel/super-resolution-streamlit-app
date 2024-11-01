@@ -1,5 +1,6 @@
 import streamlit as st
-from PIL import Image
+import cv2                          # Add OpenCV for preprocessing and postprocessing
+from PIL import Image, ImageFilter
 import numpy as np
 from streamlit_drawable_canvas import st_canvas
 import torch
@@ -15,22 +16,25 @@ st.set_page_config(layout="wide")
 # Device setup for PyTorch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Model selection interface
-model_selection = st.selectbox("Select Model", ["LMLT x2", "LMLT x4"])
-
-# Set model file path based on selection (change this as per your file locations)
-if model_selection == "LMLT x2":
-    file_path = "/content/test_base_benchmark_x2.yml"
-elif model_selection == "LMLT x4":
-    file_path = "/content/test_base_benchmark_x4.yml"
+file_path = "/content/test_base_benchmark_x2.yml"
 
 # Load the selected model configuration
 opt = parse_options(file_path, is_train=False)
 model = build_model(opt)
 
+def preprocess_image(image):
+    # Directly return the original image without any preprocessing
+    return image
+
+def advanced_postprocess_image(image):
+    # Convert image to PIL format (if not already) and apply a mild sharpening filter
+    sharpened_image = image.filter(ImageFilter.UnsharpMask(radius=1, percent=100, threshold=1))
+    return sharpened_image
+
 # Streamlit app title and description
-st.title(f"Image Upscaling with {model_selection}")
-st.write("Upload an image, and the model will generate a super-resolved version for the selected Region of Interest (ROI).")
+# st.title(f"Image Upscaling with {model_selection}")
+st.title(f"Generating High Resolution Zoom-In for Images using LMLT-Base-x2")
+st.write("Upload Image")
 
 # File uploader
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg"])
@@ -43,32 +47,41 @@ if uploaded_file is not None:
     st.image(image, caption="Uploaded Image", use_column_width=False)
 
     # Provide two options for upscaling
-    option = st.radio("Choose Upscaling Option:", ("Upscale Entire Image", "Upscale Selected Region"))
+    # option = st.radio("Choose Upscaling Option:", ("Upscale Entire Image", "Upscale Selected Region"))
+    option = st.selectbox("Choose Upscaling Option", ["Upscale Entire Image", "Upscale Selected Region"])
 
     # Upscale Entire Image Option
     if option == "Upscale Entire Image":
         if st.button("Upscale Entire Image"):
             try:
-                # Preprocess the image
+                # Preprocess the image to reduce noise
+                preprocessed_image = preprocess_image(image)
+
+                # Convert preprocessed image to tensor for model input
                 preprocess = transforms.Compose([
                     transforms.Lambda(lambda img: img.convert('RGB') if img.mode == 'RGBA' else img),
-                    transforms.ToTensor()
-                ])
-                image_tensor = preprocess(image).unsqueeze(0).to(device)
+                    transforms.ToTensor()])
+                image_tensor = preprocess(preprocessed_image).unsqueeze(0).to(device)
 
                 # Feed the image to the model and run upscaling
                 model.feed_data({'lq': image_tensor})
                 model.test()
 
-                # Convert the output tensor to an image
-                output_image = transforms.ToPILImage()(model.get_current_visuals()['result'].squeeze().cpu())
+                # Get the output from the model
+                output_image_tensor = model.get_current_visuals()['result'].squeeze().cpu()
+                output_image = transforms.ToPILImage()(output_image_tensor)
+
+                # Postprocess the output image to reduce color patches
+                #output_image = postprocess_image(output_image)
+
+                # Apply advanced postprocessing to reduce color artifacts
+                # output_image = advanced_postprocess_image(output_image)                  # --- Last Edit --- Good Results
 
             except RuntimeError:
-                # st.error("An issue occurred while processing the image. Please try with a smaller image.")
-                st.write("## ▲ An error occurred while processing the image. Please try with a smaller image.")
+                st.write("##### ▲ An error occurred while processing the image. Please try with a smaller image.")
 
             else:
-                # Display and provide download option for the upscaled image
+                #display_width = calculate_display_dimensions_from_height(img_width, img_height, 2, 300)
                 st.image(output_image, caption="Upscaled Entire Image", width= 2 * img_width)
                 buf = io.BytesIO()
                 output_image.save(buf, format='PNG')
@@ -108,17 +121,20 @@ if uploaded_file is not None:
                 roi = np.array(image)[top:top + height, left:left + width, :]
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.image(roi, caption="Selected Region of Interest", width=img_width)
+                    st.image(roi, caption="Selected Region of Interest", width = img_width)
 
                 if st.button("Upscale Selected Region"):
                     try:
-                        # Preprocess and upscale the ROI
+                        # Convert Numpy to  Image
                         roi_image = Image.fromarray(roi)
+
+                        # Preprocess the image to reduce noise
+                        preprocessed_image = preprocess_image(roi_image)
+
                         preprocess = transforms.Compose([
                             transforms.Lambda(lambda img: img.convert('RGB') if img.mode == 'RGBA' else img),
-                            transforms.ToTensor()
-                        ])
-                        roi_tensor = preprocess(roi_image).unsqueeze(0).to(device)
+                            transforms.ToTensor()])
+                        roi_tensor = preprocess(preprocessed_image).unsqueeze(0).to(device)
 
                         # Feed the ROI to the model
                         model.feed_data({'lq': roi_tensor})
@@ -127,15 +143,17 @@ if uploaded_file is not None:
                         # Convert the output tensor to an image
                         output_image = transforms.ToPILImage()(model.get_current_visuals()['result'].squeeze().cpu())
 
+                        # Apply advanced postprocessing to reduce color artifacts
+                        output_image = advanced_postprocess_image(output_image)  
+
                     except RuntimeError:
                         # st.error("An issue occurred while processing the image. Please try selecting a smaller region or use a different image.")
                         st.write("##### ▲ An error occurred while processing the image. Please try selecting a smaller region or use a different image.")
-                    
+
                     else:
                         # Display the upscaled region and provide download option
                         with col2:
-                            st.image(output_image, caption="Upscaled Region", width=img_width)
+                            st.image(output_image, caption="Upscaled Region", width = img_width)
                             buf = io.BytesIO()
                             output_image.save(buf, format='PNG')
                             st.download_button("Download Upscaled Region", buf.getvalue(), file_name="upscaled_region.png", mime="image/png")
-
