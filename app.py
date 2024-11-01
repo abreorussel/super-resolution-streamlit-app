@@ -127,6 +127,11 @@ if uploaded_file is not None:
                     try:
                         # Convert Numpy to  Image
                         roi_image = Image.fromarray(roi)
+                        # -----------------------------------------------------------------------------------------------
+                        buf = io.BytesIO()
+                        roi_image.save(buf, format='PNG')
+                        st.download_button("Download Cropped Region", buf.getvalue(), file_name="cropped.png", mime="image/png")
+                        #---------------------------------------------------------------------------------------------------
 
                         # Preprocess the image to reduce noise
                         preprocessed_image = preprocess_image(roi_image)
