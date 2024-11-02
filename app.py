@@ -34,10 +34,9 @@ def advanced_postprocess_image(image):
 # Streamlit app title and description
 # st.title(f"Image Upscaling with {model_selection}")
 st.title(f"Generating High Resolution Zoom-In for Images using LMLT-Base-x2")
-st.write("Upload Image")
 
 # File uploader
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg"])
+uploaded_file = st.file_uploader("Upload an Image", type=["jpg", "png", "jpeg"])
 
 # Display the uploaded image first, then provide options
 if uploaded_file is not None:
@@ -127,11 +126,6 @@ if uploaded_file is not None:
                     try:
                         # Convert Numpy to  Image
                         roi_image = Image.fromarray(roi)
-                        # -----------------------------------------------------------------------------------------------
-                        buf = io.BytesIO()
-                        roi_image.save(buf, format='PNG')
-                        st.download_button("Download Cropped Region", buf.getvalue(), file_name="cropped.png", mime="image/png")
-                        #---------------------------------------------------------------------------------------------------
 
                         # Preprocess the image to reduce noise
                         preprocessed_image = preprocess_image(roi_image)
