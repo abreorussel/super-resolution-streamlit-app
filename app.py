@@ -67,7 +67,7 @@ if uploaded_file is not None:
                 output_image = transforms.ToPILImage()(output_image_tensor)
 
             except RuntimeError:
-                st.write("##### ▲ An error occurred while processing the image. Please try with a smaller image.")
+                st.write("##### ▲ An error occurred while processing the image. Please try with a larger image.")
 
             else:
                 st.image(output_image, caption="Upscaled Entire Image", width= 2 * img_width)
@@ -119,7 +119,7 @@ if uploaded_file is not None:
                         preprocess = transforms.Compose([
                             transforms.Lambda(lambda img: img.convert('RGB') if img.mode == 'RGBA' else img),
                             transforms.ToTensor()])
-                        roi_tensor = preprocess(preprocessed_image).unsqueeze(0).to(device)
+                        roi_tensor = preprocess(roi_image).unsqueeze(0).to(device)
 
                         # Feed the ROI to the model
                         model.feed_data({'lq': roi_tensor})
@@ -129,7 +129,7 @@ if uploaded_file is not None:
                         output_image = transforms.ToPILImage()(model.get_current_visuals()['result'].squeeze().cpu())
 
                     except RuntimeError:
-                        st.write("##### ▲ An error occurred while processing the image. Please try selecting a smaller region or use a different image.")
+                        st.write("##### ▲ An error occurred while processing the image. Please try selecting a larger region or use a different image.")
 
                     else:
                         # Display the upscaled region and provide download option
